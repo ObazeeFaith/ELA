@@ -74,5 +74,4 @@ def student_grade_management_system():
         print(f"{name:<20} | {average_score:<15.2f} | {status:<12}")
 
 
-if __name__ == "__main__":
-    student_grade_management_system()
+student_grade_management_system()
