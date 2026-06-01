@@ -1,0 +1,258 @@
+import re
+import sys
+
+# GitHub Copilot
+# Simple student grade management system using dictionaries with input validation.
+
+
+# students: { mat_no: { "name": str, "department": str, "level": int, "grades": { course: score } } }
+students = {}
+
+ALNUM_RE = re.compile(r'^[A-Za-z0-9]{1,10}$')
+NAME_RE = re.compile(r'^[A-Za-z .\'-]{1,100}$')  # allow common name chars
+# allow department names with spaces & dash
+DEPT_RE = re.compile(r'^[A-Za-z &\-]{1,100}$')
+
+
+def input_nonempty(prompt, pattern=None, errmsg="Invalid input"):
+    while True:
+        s = input(prompt).strip()
+        if not s:
+            print("Input cannot be empty.")
+            continue
+        if pattern and not pattern.match(s):
+            print(errmsg)
+            continue
+        return s
+
+
+def input_matno():
+    return input_nonempty(
+        "Matric number (alphanumeric, max 10 chars): ",
+        pattern=ALNUM_RE,
+        errmsg="Matric number must be alphanumeric and up to 10 characters."
+    ).upper()
+
+
+def input_name():
+    return input_nonempty(
+        "Student name: ",
+        pattern=NAME_RE,
+        errmsg="Name contains invalid characters."
+    )
+
+
+def input_department():
+    return input_nonempty(
+        "Department: ",
+        pattern=DEPT_RE,
+        errmsg="Department contains invalid characters."
+    )
+
+
+def input_level():
+    while True:
+        s = input("Level (integer, e.g. 100, 200): ").strip()
+        if not s.isdigit():
+            print("Level must be a positive integer.")
+            continue
+        lvl = int(s)
+        if lvl < 1 or lvl > 9999:
+            print("Level out of range. Enter a reasonable positive integer.")
+            continue
+        return lvl
+
+
+def input_course_code():
+    return input_nonempty(
+        "Course code (alphanumeric, max 10 chars): ",
+        pattern=ALNUM_RE,
+        errmsg="Course code must be alphanumeric and up to 10 characters."
+    ).upper()
+
+
+def input_score():
+    while True:
+        s = input("Score (0-100): ").strip()
+        try:
+            val = float(s)
+        except ValueError:
+            print("Enter a numeric score.")
+            continue
+        if val < 0 or val > 100:
+            print("Score must be between 0 and 100.")
+            continue
+        return val
+
+
+def compute_average(grades):
+    if not grades:
+        return None
+    return sum(grades.values()) / len(grades)
+
+
+def average_to_grade(avg):
+    if avg is None:
+        return "N/A"
+    if avg >= 70:
+        return "A"
+    if avg >= 60:
+        return "B"
+    if avg >= 50:
+        return "C"
+    if avg >= 45:
+        return "D"
+    return "F"
+
+
+def add_student():
+    mat = input_matno()
+    if mat in students:
+        print("Student with this matric number already exists.")
+        return
+    name = input_name()
+    dept = input_department()
+    lvl = input_level()
+    students[mat] = {"name": name, "department": dept,
+                     "level": lvl, "grades": {}}
+    print("Student added.")
+
+
+def view_student():
+    mat = input_matno()
+    s = students.get(mat)
+    if not s:
+        print("Student not found.")
+        return
+    print(
+        f"Matric: {mat}\nName: {s['name']}\nDepartment: {s['department']}\nLevel: {s['level']}")
+    if s["grades"]:
+        for c, sc in s["grades"].items():
+            print(f"  {c}: {sc}")
+        avg = compute_average(s["grades"])
+        print(f"Average: {avg:.2f}  Grade: {average_to_grade(avg)}")
+    else:
+        print("No grades recorded.")
+
+
+def list_students():
+    if not students:
+        print("No students recorded.")
+        return
+    for mat, s in students.items():
+        avg = compute_average(s["grades"])
+        avg_str = f"{avg:.2f}" if avg is not None else "N/A"
+        print(
+            f"{mat} | {s['name']} | {s['department']} | {s['level']} | Avg: {avg_str}")
+
+
+def remove_student():
+    mat = input_matno()
+    if mat in students:
+        del students[mat]
+        print("Student removed.")
+    else:
+        print("Student not found.")
+
+
+def add_or_update_grade():
+    mat = input_matno()
+    s = students.get(mat)
+    if not s:
+        print("Student not found.")
+        return
+    course = input_course_code()
+    score = input_score()
+    s["grades"][course] = score
+    print("Grade recorded.")
+
+
+def remove_grade():
+    mat = input_matno()
+    s = students.get(mat)
+    if not s:
+        print("Student not found.")
+        return
+    course = input_course_code()
+    if course in s["grades"]:
+        del s["grades"][course]
+        print("Grade removed.")
+    else:
+        print("Course not found for this student.")
+
+
+def edit_student():
+    mat = input_matno()
+    s = students.get(mat)
+    if not s:
+        print("Student not found.")
+        return
+    print("Leave input blank to keep current value.")
+    new_name = input("New name: ").strip()
+    if new_name:
+        if not NAME_RE.match(new_name):
+            print("Invalid name format. Name not changed.")
+        else:
+            s["name"] = new_name
+    new_dept = input("New department: ").strip()
+    if new_dept:
+        if not DEPT_RE.match(new_dept):
+            print("Invalid department format. Department not changed.")
+        else:
+            s["department"] = new_dept
+    new_level = input("New level: ").strip()
+    if new_level:
+        if not new_level.isdigit():
+            print("Invalid level. Level not changed.")
+        else:
+            s["level"] = int(new_level)
+    print("Student updated.")
+
+
+def help_menu():
+    print("""
+Commands:
+ add        - Add a new student
+ view       - View a student's record
+ list       - List all students
+ edit       - Edit student info
+ remove     - Remove a student
+ grade      - Add or update a grade for a student
+ delgrade   - Remove a course grade for a student
+ quit/exit  - Exit the program
+ help       - Show this help
+""")
+
+
+def main():
+    print("Student Grade Management System")
+    help_menu()
+    while True:
+        cmd = input("cmd> ").strip().lower()
+        if cmd in ("add",):
+            add_student()
+        elif cmd in ("view",):
+            view_student()
+        elif cmd in ("list",):
+            list_students()
+        elif cmd in ("edit",):
+            edit_student()
+        elif cmd in ("remove", "del", "delete"):
+            remove_student()
+        elif cmd in ("grade", "addgrade", "updategrade"):
+            add_or_update_grade()
+        elif cmd in ("delgrade", "removegrade"):
+            remove_grade()
+        elif cmd in ("help", "?"):
+            help_menu()
+        elif cmd in ("quit", "exit"):
+            print("Exiting.")
+            sys.exit(0)
+        elif cmd == "":
+            continue
+        else:
+            print("Unknown command. Type 'help' for commands.")
+
+
+if __name__ == "__main__":
+    main()
