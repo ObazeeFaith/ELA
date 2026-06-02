@@ -1,0 +1,66 @@
+
+"""
+Simple calculator with input validation.
+Supports: +, -, *, /
+Run and follow prompts. Type "exit" to quit.
+"""
+
+import sys
+
+VALID_OPS = {"+", "-", "*", "/"}
+
+
+def get_number(prompt):
+    while True:
+        s = input(prompt).strip()
+        if s.lower() == "exit":
+            sys.exit(0)
+        try:
+            # Accept integers and floats
+            if "." in s:
+                return float(s)
+            return int(s)
+        except ValueError:
+            print("Invalid number. Enter an integer or float, or 'exit' to quit.")
+
+
+def get_operator(prompt):
+    while True:
+        op = input(prompt).strip()
+        if op.lower() == "exit":
+            sys.exit(0)
+        if op in VALID_OPS:
+            return op
+        print("Invalid operator. Choose one of: +  -  *  /.")
+
+
+def compute(a, b, op):
+    if op == "+":
+        return a + b
+    if op == "-":
+        return a - b
+    if op == "*":
+        return a * b
+    if op == "/":
+        if b == 0:
+            raise ZeroDivisionError("Cannot divide by zero.")
+        return a / b
+    raise ValueError("Unsupported operator.")
+
+
+def main():
+    print("Simple calculator. Type 'exit' at any prompt to quit.")
+    while True:
+        a = get_number("Enter first number: ")
+        op = get_operator("Enter operator (+ - * /): ")
+        b = get_number("Enter second number: ")
+        try:
+            result = compute(a, b, op)
+        except ZeroDivisionError as e:
+            print("Error:", e)
+            continue
+        # Print integers without decimal point when possible
+        if isinstance(result, float) and result.is_integer():
+            result = int(result)
+        print("Result:", result)
+        print()
